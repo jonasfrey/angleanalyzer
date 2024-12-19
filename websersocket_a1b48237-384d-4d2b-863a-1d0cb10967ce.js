@@ -79,7 +79,7 @@ let f_handler = async function(o_request){
     if(o_url.pathname == '/'){
         return new Response(
             await Deno.readTextFile(
-                `${s_path_abs_folder_current}/localhost/client.html`
+                `${s_path_abs_folder_current}/localhost/auto.html`
             ),
             { 
                 headers: {

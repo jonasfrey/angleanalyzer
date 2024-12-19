@@ -17,6 +17,8 @@
             height: 100%;
             z-index: -1;
             object-fit: cover;
+            background-position: center;
+            background-repeat: no-repeat;
         }
         canvas {
             position: absolute;
@@ -26,8 +28,11 @@
     </style>
 </head>
 <body>
-    <input type="file" id="imageInput" accept="image/*" style="position: fixed; top: 10px; left: 10px; z-index: 10;">
-    <img id="background" src="" alt="Background Image">
+    <div style="position: fixed; top: 10px; left: 10px; z-index: 10;">
+        <input type="file" id="imageInput" accept="image/*" >
+        <button onclick="f_change_image_size()">change image size</button>
+    </div>
+    <div id="background" src="" alt="">
     <canvas id="canvas"></canvas>
 
     <script>
@@ -43,7 +48,16 @@
         }
 
         window.addEventListener('resize', resizeCanvas);
-
+        let f_change_image_size = function(){
+            let o_img = document.querySelector('#background')
+            let a_s = ['contain', 'cover', 'auto'];
+            let s = a_s.find(s=>{return s == getComputedStyle(o_img).getPropertyValue('background-size')});
+            let n_idx = a_s.indexOf(s);
+            let n_idx2 = (n_idx+1)%a_s.length
+            let s2 = a_s[n_idx2];
+            console.log(s2)
+            o_img.style.backgroundSize = s2
+        }
         let dots = [
             { x: 300, y: 300 },
             { x: 500, y: 300 },
@@ -62,15 +76,46 @@
             return Math.acos((AB ** 2 + BC ** 2 - AC ** 2) / (2 * AB * BC)) * (180 / Math.PI);
         }
 
-        function drawArc(center, start, end, color, radiusOffset) {
+        function f_n_ang_nor__draw_arc(center, start, end, color, radiusOffset, lineWidth) {
             const radius = distanceBetweenPoints(center, start) + radiusOffset;
             const startAngle = Math.atan2(start.y - center.y, start.x - center.x);
             const endAngle = Math.atan2(end.y - center.y, end.x - center.x);
             ctx.beginPath();
             ctx.arc(center.x, center.y, radius, startAngle, endAngle);
             ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = lineWidth;
             ctx.stroke();
+            console.log({startAngle,endAngle})
+            let n_tau = Math.PI*2;
+            // return Math.abs(((endAngle+n_tau))-((startAngle+n_tau)))/n_tau;
+            const angleInRadians = endAngle - startAngle;
+
+            // Ensure the angle is always positive
+            const normalizedAngle = (angleInRadians + 2 * Math.PI) % (2 * Math.PI);
+            return normalizedAngle /n_tau;
+        }
+
+        function f_draw_text_with_outline(text, x, y,s_color_text, s_color_outline, s_font) {
+            let n_line_width = (parseInt(s_font)/10)*2.;
+            ctx.font = s_font;
+            ctx.strokeStyle = s_color_outline;
+            ctx.lineWidth = n_line_width;
+            ctx.strokeText(text, x, y);
+            ctx.fillStyle = s_color_text;
+            ctx.fillText(text, x, y);
+        }
+
+        function drawTextWithBackground(text, x, y, bgColor, textColor) {
+            ctx.font = '24px Arial';
+            ctx.fillStyle = bgColor;
+            const padding = 6;
+            const metrics = ctx.measureText(text);
+            const width = metrics.width + padding * 2;
+            const height = 28 + padding * 2;
+            ctx.fillRect(x - padding, y - height + padding, width, height);
+
+            ctx.fillStyle = textColor;
+            ctx.fillText(text, x, y);
         }
 
         function draw() {
@@ -81,9 +126,12 @@
             ctx.moveTo(dots[0].x, dots[0].y);
             ctx.lineTo(dots[1].x, dots[1].y);
             ctx.lineTo(dots[2].x, dots[2].y);
-            ctx.lineTo(dots[0].x, dots[0].y);
+            // ctx.lineTo(dots[0].x, dots[0].y);
             ctx.strokeStyle = 'white';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 5;
+            ctx.stroke();
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
             ctx.stroke();
 
             // Calculate angles
@@ -92,19 +140,17 @@
             const angle3 = calculateAngle(dots[2], dots[0], dots[1]);
 
             // Draw arcs and angle labels
-            drawArc(dots[1], dots[0], dots[2], 'yellow', -10); // Spitzer Winkel
-            ctx.fillStyle = 'yellow';
-            ctx.fillText(`${angle1.toFixed(1)}°`, dots[1].x - 50, dots[1].y - 50);
+            let n_ang_nor1 = f_n_ang_nor__draw_arc(dots[1], dots[0], dots[2], 'rgba(255,0,0,0.5)', -10, 5); // Spitzer Winkel
+            f_draw_text_with_outline(`${(n_ang_nor1*360).toFixed(1)}°`, dots[1].x - 50, dots[1].y - 50,  'red', 'white', '20px Arial');
 
-            drawArc(dots[1], dots[2], dots[0], 'cyan', 10); // Stumpfer Winkel
-            ctx.fillStyle = 'cyan';
-            ctx.fillText(`${(360 - angle1).toFixed(1)}°`, dots[1].x + 30, dots[1].y + 30);
+            let n_ang_nor2 = f_n_ang_nor__draw_arc(dots[1], dots[2], dots[0], 'rgba(0,0,255,0.5)', 10, 5); // Stumpfer Winkel
+            f_draw_text_with_outline(`${((n_ang_nor2*360)).toFixed(1)}°`, dots[1].x + 30, dots[1].y + 30, 'blue', 'white', '20px Arial');
 
             // Draw dots
             dots.forEach(dot => {
                 ctx.beginPath();
-                ctx.arc(dot.x, dot.y, 15, 0, 2 * Math.PI);
-                ctx.fillStyle = 'red';
+                ctx.arc(dot.x, dot.y, 30, 0, 2 * Math.PI);
+                ctx.fillStyle = 'rgba(255,0,0,0.5)';
                 ctx.fill();
             });
         }
@@ -137,7 +183,7 @@
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    background.src = event.target.result;
+                    background.style.backgroundImage = `url(${event.target.result})`;
                 };
                 reader.readAsDataURL(file);
             }
