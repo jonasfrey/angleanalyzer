@@ -17,6 +17,7 @@
             height: 100%;
             z-index: -1;
             object-fit: cover;
+            background-size: contain;
             background-position: center;
             background-repeat: no-repeat;
         }
@@ -59,9 +60,9 @@
             o_img.style.backgroundSize = s2
         }
         let dots = [
-            { x: 300, y: 300 },
-            { x: 500, y: 300 },
-            { x: 400, y: 500 }
+            { x: window.innerWidth/3, y: (window.innerHeight/3)*2 },
+            { x: window.innerWidth/2, y: (window.innerHeight/3)*1 },
+            { x: (window.innerWidth/3)*2, y: (window.innerHeight/3)*2 }
         ];
         let selectedDot = null;
 
@@ -188,6 +189,51 @@
                 reader.readAsDataURL(file);
             }
         });
+
+        function getPointerPosition(e) {
+            const rect = canvas.getBoundingClientRect();
+            if (e.touches) {
+                // For touch events
+                return {
+                    x: e.touches[0].clientX - rect.left,
+                    y: e.touches[0].clientY - rect.top
+                };
+            } else {
+                // For mouse events
+                return {
+                    x: e.clientX - rect.left,
+                    y: e.clientY - rect.top
+                };
+            }
+        }
+
+        function onPointerDown(e) {
+            const position = getPointerPosition(e);
+            selectedDot = dots.find(dot => distanceBetweenPoints(dot, position) < 30); // Increase threshold to 30
+        }
+
+        function onPointerMove(e) {
+            if (selectedDot) {
+                const position = getPointerPosition(e);
+                selectedDot.x = position.x;
+                selectedDot.y = position.y;
+                draw();
+            }
+        }
+
+        function onPointerUp() {
+            selectedDot = null;
+        }
+
+        canvas.addEventListener('mousedown', onPointerDown);
+        canvas.addEventListener('mousemove', onPointerMove);
+        canvas.addEventListener('mouseup', onPointerUp);
+
+// Add touch support
+canvas.addEventListener('touchstart', onPointerDown);
+canvas.addEventListener('touchmove', onPointerMove);
+canvas.addEventListener('touchend', onPointerUp);
+
 
         resizeCanvas();
     </script>
